@@ -1,0 +1,186 @@
+<html>
+
+<head>
+  <title>Websocket test</title>
+  <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+  <script src="{{ static_url('js/jquery.flot.js') }}" type="text/javascript"></script>
+</head>
+
+<style>
+.plot {
+  width:600px;
+  height:300px;
+}
+</style>
+
+<body>
+
+  <table>
+  {% for field in field_names %}
+    <tr>
+    <td>{{ escape(field) }}</td>
+    <td><input type="text" id="{{ escape(field) }}" class="field"/></td>
+    <td><button onclick="store_field('{{ escape(field) }}');return false;">Store</button></td>
+    <td><button onclick="fetch_field('{{ escape(field) }}');return false;">Fetch</button></td>
+    </tr>
+  {% end %}
+  </table>
+  <br>
+  <button onclick="store_all_fields();return false;">Store All</button>
+  <button onclick="fetch_all_fields();return false;">Fetch All</button>
+  <br><br>
+  <table>
+  {% for plot in plot_names %}
+    <tr>
+    <td><div id="{{ escape(plot) }}" class="plot"></div></td>
+    </tr>
+  {% end %}
+  </table>
+
+  <script type="text/javascript">
+    var field_names = {{ field_names }}
+    var plot_names = {{ plot_names }}
+    var ws;
+    var plots = new Array();
+
+    var options = {
+        grid: {
+            borderWidth: 1,
+            minBorderMargin: 20,
+            labelMargin: 10,
+            margin: {
+                top: 8,
+                bottom: 20,
+                left: 20
+            },
+        },
+        series: {
+            lines: {
+                lineWidth: 2,
+            },
+            shadowSize: 0
+        },
+    };
+
+    function connect()
+    {
+      if ('MozWebSocket' in window) {
+        WebSocket = MozWebSocket;
+      }
+      if ('WebSocket' in window) {
+        var ws_con = "ws://" + window.location.host + "/mec";
+        console.log(ws_con);
+
+        ws = new WebSocket(ws_con);
+
+        ws.onopen = function() {
+          console.log('websocket connected!');
+          fetch_all_fields();
+          make_all_plots();
+          fetch_all_plots();
+        };
+
+        ws.onmessage = function (evt) {
+          var receivedMsg = evt.data;
+
+          var json_data = JSON.parse(receivedMsg);
+          if (json_data)
+          {
+            cmd = json_data["cmd"]
+            if (cmd == "update_field") {
+              fname = json_data["name"]
+              value = json_data["value"]
+              console.log("Received: "+cmd+" "+fname+"="+value);
+
+              $("#"+fname+".field").val(value);
+            } else if (cmd == "update_plot") {
+              pname = json_data["name"]
+              x_values = json_data["x_values"]
+              y_values = json_data["y_values"]
+
+              var valArray = new Array();
+              for (i in x_values) {
+                  valArray[i] = [x_values[i],y_values[i]];
+              }
+
+              var plot = plots[pname];
+              plot.setData([valArray]);
+              plot.setupGrid();
+              plot.draw();
+            }
+          }
+        };
+
+        ws.onclose = function() {
+          console.log('websocket closed');
+        };
+      } else {
+        console.log('Sorry, your browser does not support websockets.');
+      }
+    }
+
+    function disconnect()
+    {
+      if (ws) {
+        ws.close();
+      }
+    }
+
+    function store_field(fname) {
+      var val = document.getElementById(fname).value;
+      var msg = {cmd:"store_field",name:fname,value:val};
+      console.log('Sending: '+JSON.stringify(msg));
+      ws.send(JSON.stringify(msg));
+    }
+
+    function fetch_field(fname) {
+      var msg = {cmd:"fetch_field",name:fname};
+      console.log('Sending: '+JSON.stringify(msg));
+      ws.send(JSON.stringify(msg));
+    }
+
+    function store_all_fields() {
+      for (var i in field_names) {
+        store_field(field_names[i]);
+      }
+    }
+
+    function fetch_all_fields() {
+      for (var i in field_names) {
+        fetch_field(field_names[i]);
+      }
+    }
+
+    function fetch_plot(pname)
+    {
+      var msg = {cmd:"fetch_plot",name:pname};
+      console.log('Sending: '+JSON.stringify(msg));
+      ws.send(JSON.stringify(msg));
+    }
+
+    function fetch_all_plots() {
+      for (var i in plot_names) {
+        fetch_plot(plot_names[i]);
+      }
+    }
+
+    function make_plot(pname)
+    {
+        plots[pname] = $.plot($("#"+pname+".plot"),[],options);
+    }
+
+    function make_all_plots()
+    {
+      for (var i in plot_names) {
+        make_plot(plot_names[i]);
+      }
+    }
+
+    connect();
+
+  </script>
+
+</body>
+
+</html>
+

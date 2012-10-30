@@ -1,0 +1,225 @@
+<html>
+
+<head>
+  <title>Websocket test</title>
+  <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+  <script src="{{ static_url('js/d3.v2.js') }}" type="text/javascript"></script>
+
+<style>
+  svg {
+    font: 10px sans-serif;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+  }
+</style>
+
+</head>
+
+<body>
+
+  <table>
+  {% for field in field_names %}
+    <tr>
+    <td>{{ escape(field) }}</td>
+    <td><input type="text" id="{{ escape(field) }}" class="field"/></td>
+    <td><button onclick="store_field('{{ escape(field) }}');return false;">Store</button></td>
+    <td><button onclick="fetch_field('{{ escape(field) }}');return false;">Fetch</button></td>
+    </tr>
+  {% end %}
+  </table>
+  <br>
+  <button onclick="store_all_fields();return false;">Store All</button>
+  <button onclick="fetch_all_fields();return false;">Fetch All</button>
+  <br><br>
+  <div id="charts" />
+
+  <script type="text/javascript">
+    var field_names = {{ field_names }}
+    var plot_names = {{ plot_names }}
+    var ws;
+
+    function connect()
+    {
+      if ('MozWebSocket' in window) {
+        WebSocket = MozWebSocket;
+      }
+      if ('WebSocket' in window) {
+        var ws_con = "ws://" + window.location.host + "/mec";
+        console.log(ws_con);
+
+        ws = new WebSocket(ws_con);
+
+        ws.onopen = function() {
+          console.log('websocket connected!');
+          fetch_all_fields();
+          make_all_plots();
+          fetch_all_plots();
+        };
+
+        ws.onmessage = function (evt) {
+          var receivedMsg = evt.data;
+          console.log("Received: "+receivedMsg);
+
+          var json_data = JSON.parse(receivedMsg);
+          if (json_data)
+          {
+            cmd = json_data["cmd"]
+            if (cmd == "update_field") {
+              field = json_data["field"]
+              value = json_data["value"]
+              var input = document.getElementById(field);
+              input.value = value;
+            } else if (cmd == "update_plot") {
+              
+            }
+          }
+        };
+
+        ws.onclose = function() {
+          console.log('websocket closed');
+        };
+      } else {
+        console.log('sorry, your browser does not support websockets.');
+      }
+    }
+
+    function store_field(field) {
+      var val = document.getElementById(field).value;
+      var msg = {cmd:"store_field",field:field,value:val};
+      console.log('Sending: '+JSON.stringify(msg));
+      ws.send(JSON.stringify(msg));
+    }
+
+    function fetch_field(field) {
+      var msg = {cmd:"fetch_field",field:field};
+      console.log('Sending: '+JSON.stringify(msg));
+      ws.send(JSON.stringify(msg));
+    }
+
+    function store_all_fields() {
+      for (var i in field_names) {
+        store_field(field_names[i]);
+      }
+    }
+
+    function fetch_all_fields() {
+      for (var i in field_names) {
+        fetch_field(field_names[i]);
+      }
+    }
+
+    function disconnect()
+    {
+      if (ws) {
+        ws.close();
+      }
+    }
+
+    var margin = {top: 20, right: 20, bottom: 40, left: 40},
+        width = 400 - margin.left - margin.right,
+        height = 225 - margin.top - margin.bottom;
+
+    var x_data = [1,2,3,4,5,6,7,8,9];
+    var y_data = [3,7,9,1,4,6,8,2,5];
+
+    function make_plot(pname)
+    {
+      console.log(pname);
+
+      var valArray = new Array();
+      for (i in x_data) {
+        valArray[i] = { x: x_data[i], y: y_data[i] };
+      }
+
+      var x_max = d3.max(x_data);
+      var y_max = d3.max(y_data);
+
+      var x = d3.scale.linear().domain([0,x_max]).range([0,width]);
+      var y = d3.scale.linear().domain([0,y_max]).range([height,0]);
+
+      var xAxis = d3.svg.axis().scale(x).orient("bottom");
+      var yAxis = d3.svg.axis().scale(y).orient("left");
+
+      var charts = d3.select("#charts");
+
+      var svg = charts.append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("id",pname)
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+
+      svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis)
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", ".71em")
+        .style("text-anchor", "end")
+        .text(pname);
+
+      svg.selectAll("path.line").data([valArray]).enter()
+        .append("path")
+        .attr("class","line")
+        .attr("d",d3.svg.line()
+          .x(function(d) { return x(d.x); })
+          .y(function(d) { return y(d.y); })
+        );
+
+      charts.append("br");
+      charts.append("button").attr("onclick","rand_mod(\""+pname+"\");return false;").html("Regen");
+    }
+
+    function make_all_plots() {
+      for (var i in plot_names) {
+        make_plot(plot_names[i]);
+      }
+    }
+
+    function fetch_plot(pname) {
+    }
+
+    function fetch_all_plots() {
+      for (var i in plot_names) {
+        fetch_plot(plot_names[i]);
+      }
+    }
+
+    function rand_mod(pname) {
+      var valArray = new Array();
+      for (i in valArray) {
+        valArray[i] = { x: x_data[i], y: Math.floor(10*Math.random()) };
+      }
+
+      var svg = d3.select("#"+pname);
+      svg.selectAll("path.line").data([valArray]).enter()
+        .append("path")
+        .attr("class","line")
+        .transition().duration(2000).delay(200);
+    }
+
+    connect();
+
+  </script>
+
+</body>
+
+</html>
+

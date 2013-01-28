@@ -29,16 +29,6 @@ plot_ids = []
 # zmq interface
 context = zmq.Context()
 
-#socket_out = context.socket(zmq.PUB)
-#socket_out.bind("tcp://0.0.0.0:6123")
-
-# tornado hook
-#def echo(msg):
-#    for s in msg:
-#        print 'Received: ' + s
-#stream = zmqstream.ZMQStream(socket_in)
-#stream.on_recv(echo)
-
 # tornado content handlers
 class Application(tornado.web.Application):
     def __init__(self):
@@ -87,7 +77,7 @@ class DataHandler(tornado.websocket.WebSocketHandler):
 
     def on_recv(self,msg):
         for s in msg:
-            print 'Received: ' + s
+            self.write_message(s)
 
 
 class RootHandler(tornado.web.RequestHandler):
@@ -97,7 +87,7 @@ class RootHandler(tornado.web.RequestHandler):
 
 class TestHandler(tornado.web.RequestHandler):
     def get(self,path):
-        self.render(path,field_names=field_names,plot_names=plot_names)
+        self.render(path)
 
 
 def main():

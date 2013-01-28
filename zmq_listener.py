@@ -2,17 +2,20 @@ import zmq
 import json
 import numpy as np
 from time import sleep
+import scipy.signal as sig
 
 # constants
-def rand_walk(n):
-    return np.cumsum(np.random.randn(n))
-
-pname = 'random_walk'
-velocity = 0.1
-n_base = 1024
-theta = np.linspace(0.0,2.0*np.pi,n_base)
-randw = rand_walk(n_base)
-upd_speed = 1.0
+ar_var = 0.05
+pval = 0.9
+pname = 'random_walk1'
+n_base = 256
+randx = np.linspace(0.0,n_base,n_base)
+randw = ar_var*np.random.randn(n_base)
+randy = np.zeros(n_base)
+randy[0] = randw[0]
+for i in range(1,n_base):
+  randy[i] = pval*randy[i-1] + randw[i]
+upd_speed = 0.1
 
 # zmq setup
 context = zmq.Context()
@@ -29,20 +32,18 @@ def update_plot(name,x_vals,y_vals):
     json_out = {'cmd':'update_plot','name':name,'x_values':map(unicode,x_vals),'y_values':map(unicode,y_vals)}
     socket_out.send(json.dumps(json_out))
 
-# create plot
-#update_plot(pname,theta,randw)
-
 # main loop
 while True:
     sleep(upd_speed)
 
-    theta += velocity
-    theta[theta>2.0*np.pi] -= 2.0*np.pi
+    randw = ar_var*np.random.randn(10)
+    randy[:-10] = randy[10:]
+    for i in range(10,0,-1):
+      randy[n_base-i] = pval*randy[n_base-i-1] + randw[i-1]
 
-    randw[:-10] = randw[10:]
-    randw[-10:] = rand_walk(10) + randw[-10]
+    #print randw
+    update_plot(pname,randx,np.exp(randy))
 
-    #update_plot(pname,theta,randw)
-
-    socket_out.send('testing')
+    #json_out = {'cmd':'testing'}
+    #socket_out.send(json.dumps(json_out))
 

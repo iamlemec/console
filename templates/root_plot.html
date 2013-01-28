@@ -8,14 +8,15 @@
 
 <style>
 .plot {
-  width:600px;
-  height:300px;
+  width:500px;
+  height:400px;
 }
 </style>
 
 <body>
 
   <h1>Plots</h1>
+  <table id="plotTable"><tbody></tbody></table>
 
   <script type="text/javascript">
     var ws;
@@ -26,6 +27,9 @@
             borderWidth: 1,
             minBorderMargin: 20,
             labelMargin: 10,
+			backgroundColor: {
+				colors: ["#fff", "#e4f4f4"]
+			},
             margin: {
                 top: 8,
                 bottom: 20,
@@ -35,9 +39,14 @@
         series: {
             lines: {
                 lineWidth: 2,
+                fill: true,
             },
             shadowSize: 0
         },
+		yaxis: {
+			min: 0.5,
+			max: 1.5
+		},
     };
 
     function connect()
@@ -53,13 +62,12 @@
 
         ws.onopen = function() {
           console.log('websocket connected!');
-          fetch_all_fields();
-          make_all_plots();
-          fetch_all_plots();
         };
 
         ws.onmessage = function (evt) {
           var receivedMsg = evt.data;
+
+          //console.log(receivedMsg);
 
           var json_data = JSON.parse(receivedMsg);
           if (json_data)
@@ -75,7 +83,7 @@
                   valArray[i] = [x_values[i],y_values[i]];
               }
 
-              var plot = plots[pname];
+              var plot = get_plot(pname);
               plot.setData([valArray]);
               plot.setupGrid();
               plot.draw();
@@ -98,9 +106,19 @@
       }
     }
 
-    function make_plot(pname)
+    function get_plot(pname)
     {
-        plots[pname] = $.plot($("#"+pname+".plot"),[],options);
+        var plot;
+
+        if (pname in plots) {
+          plot = plots[pname];
+        } else {
+          $('#plotTable > tbody:last').after('<tr><td><div style=\"text-align:center;\">'+pname+'<div id=\"'+pname+'\" class=\"plot\"></div></div></td></tr>');
+          plot = $.plot($("#"+pname+".plot"),[],options);
+          plots[pname] = plot;
+        }
+
+        return plot;
     }
 
     connect();

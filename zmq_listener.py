@@ -5,8 +5,8 @@ from time import sleep
 # constants
 ar_var = 0.05
 pval = 0.9
-pname = 'random_walk1'
-n_base = 256
+pname = 'random_walk2'
+n_base = 32
 randx = np.linspace(0.0,n_base,n_base)
 randw = ar_var*np.random.randn(n_base)
 randy = np.zeros(n_base)

@@ -12,6 +12,7 @@ import unicodedata
 import tornado.websocket
 import json
 import hashlib, uuid
+from collections import OrderedDict
 
 import zmq
 from zmq.eventloop import ioloop, zmqstream
@@ -21,13 +22,38 @@ from tornado.options import define, options
 
 define("port", default=8080, help="run on the given port", type=int)
 
-def rand_walk(n):
-    return np.cumsum(np.random.randn(n))
-
-plot_ids = []
+# websocket connections
+clients = []
 
 # zmq interface
 context = zmq.Context()
+
+socket_in = context.socket(zmq.SUB)
+socket_in.connect("tcp://0.0.0.0:6124")
+socket_in.setsockopt(zmq.SUBSCRIBE,"")
+
+# plot data
+plot_vals = OrderedDict()
+
+# receiver code
+def on_recv(msg):
+    for s in msg:
+        print s
+
+        # store internally
+        json_data = json.loads(s)
+        name = json_data['name']
+        cmd = json_data['cmd']
+        if cmd == 'update_plot':
+            plot_vals[name] = (json_data['x_values'],json_data['y_values'])
+
+        # broadcast to clients
+        for c in clients:
+            c.send_message(s)
+
+# attach to zmq socket
+stream = zmqstream.ZMQStream(socket_in)
+stream.on_recv(on_recv)
 
 # tornado content handlers
 class Application(tornado.web.Application):
@@ -51,17 +77,15 @@ class DataHandler(tornado.websocket.WebSocketHandler):
 
     def open(self):
         print "connection received"
+        clients.append(self)
 
-        socket_in = context.socket(zmq.SUB)
-        socket_in.connect("tcp://0.0.0.0:6124")
-        socket_in.setsockopt(zmq.SUBSCRIBE,"")
-
-        stream = zmqstream.ZMQStream(socket_in)
-        stream.on_recv(self.on_recv)
+        # initiate client
+        for (name,(xvals,yvals)) in plot_vals.items():
+            self.send_message(json.dumps({'cmd':'update_plot','name':name,'x_values':xvals,'y_values':yvals}))
 
     def on_close(self):
         print "connection closing"
-        self.do_update = False
+        clients.remove(self)
 
     def error_msg(self, error_code):
         if not error_code is None:
@@ -73,22 +97,17 @@ class DataHandler(tornado.websocket.WebSocketHandler):
 
     def on_message(self, message):
         print "received message: {0}".format(message)
-        socket_out.send_unicode(message)
 
-    def on_recv(self,msg):
-        for s in msg:
-            self.write_message(s)
-
+    def send_message(self,msg):
+        self.write_message(msg)
 
 class RootHandler(tornado.web.RequestHandler):
     def get(self):
         self.render("root_plot.html")
 
-
 class TestHandler(tornado.web.RequestHandler):
     def get(self,path):
         self.render(path)
-
 
 def main():
     tornado.options.parse_command_line()

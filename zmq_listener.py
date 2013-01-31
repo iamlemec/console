@@ -1,8 +1,6 @@
-import zmq
-import json
+import iconsole
 import numpy as np
 from time import sleep
-import scipy.signal as sig
 
 # constants
 ar_var = 0.05
@@ -17,21 +15,6 @@ for i in range(1,n_base):
   randy[i] = pval*randy[i-1] + randw[i]
 upd_speed = 0.1
 
-# zmq setup
-context = zmq.Context()
-
-socket_in = context.socket(zmq.SUB)
-socket_in.connect("tcp://0.0.0.0:6123")
-socket_in.setsockopt(zmq.SUBSCRIBE, "")
-
-socket_out = context.socket(zmq.PUB)
-socket_out.bind("tcp://0.0.0.0:6124")
-
-# plot tool
-def update_plot(name,x_vals,y_vals):
-    json_out = {'cmd':'update_plot','name':name,'x_values':map(unicode,x_vals),'y_values':map(unicode,y_vals)}
-    socket_out.send(json.dumps(json_out))
-
 # main loop
 while True:
     sleep(upd_speed)
@@ -42,8 +25,5 @@ while True:
       randy[n_base-i] = pval*randy[n_base-i-1] + randw[i-1]
 
     #print randw
-    update_plot(pname,randx,np.exp(randy))
-
-    #json_out = {'cmd':'testing'}
-    #socket_out.send(json.dumps(json_out))
+    iconsole.update_plot(pname,randx,np.exp(randy))
 

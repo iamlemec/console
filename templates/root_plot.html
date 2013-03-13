@@ -8,19 +8,18 @@
 
 <style>
 .plot {
-  width:500px;
-  height:400px;
+  width:400px;
+  height:300px;
 }
 </style>
 
 <body>
 
-  <h1>Plots</h1>
   <table id="plotTable"><tbody></tbody></table>
 
   <script type="text/javascript">
     var ws;
-    var plots = new Array();
+    var plots = new Object();
 
     var options = {
         grid: {
@@ -39,14 +38,16 @@
         series: {
             lines: {
                 lineWidth: 2,
-                fill: true,
+                fill: false,
             },
             shadowSize: 0
         },
-		yaxis: {
-			min: 0.5,
-			max: 1.5
-		},
+        xaxis: {
+            ticks: 10,
+        },
+        yaxis: {
+            ticks: 10,
+        },
     };
 
     function connect()
@@ -78,15 +79,23 @@
               x_values = json_data["x_values"]
               y_values = json_data["y_values"]
 
+              if ("options" in json_data) {
+                options1 = $.extend(true,options,json_data["options"]);
+              } else {
+                options1 = options;
+              }
+
               var valArray = new Array();
               for (i in x_values) {
                   valArray[i] = [x_values[i],y_values[i]];
               }
 
               var plot = get_plot(pname);
-              plot.setData([valArray]);
-              plot.setupGrid();
-              plot.draw();
+              //plot.setData([valArray]);
+              //plot.setupGrid();
+              //plot.draw();
+              $.plot($("#"+pname+".plot"),[valArray],options1);
+              
             }
           }
         };
@@ -113,8 +122,14 @@
         if (pname in plots) {
           plot = plots[pname];
         } else {
-          $('#plotTable > tbody:last').after('<tr><td><div style=\"text-align:center;\">'+pname+'<div id=\"'+pname+'\" class=\"plot\"></div></div></td></tr>');
-          plot = $.plot($("#"+pname+".plot"),[],options);
+          console.log('plots.length = ' + plots.length);
+          if (Object.keys(plots).length % 2 == 0) {
+            // add new row
+            $('#plotTable > tbody:last').append('<tr><td><div style=\"text-align:center;\">'+pname+'<div id=\"'+pname+'\" class=\"plot\"></div></div></td></tr>');
+          } else {
+            $('#plotTable > tbody:last > tr:last').append('<td><div style=\"text-align:center;\">'+pname+'<div id=\"'+pname+'\" class=\"plot\"></div></div></td>');
+          }
+          plot = $.plot($("#"+pname+".plot"),{});
           plots[pname] = plot;
         }
 

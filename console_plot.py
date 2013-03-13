@@ -38,14 +38,12 @@ plot_vals = OrderedDict()
 # receiver code
 def on_recv(msg):
     for s in msg:
-        print s
-
         # store internally
         json_data = json.loads(s)
         name = json_data['name']
         cmd = json_data['cmd']
         if cmd == 'update_plot':
-            plot_vals[name] = (json_data['x_values'],json_data['y_values'])
+            plot_vals[name] = (json_data['x_values'],json_data['y_values'],json_data['options'])
 
         # broadcast to clients
         for c in clients:
@@ -80,8 +78,8 @@ class DataHandler(tornado.websocket.WebSocketHandler):
         clients.append(self)
 
         # initiate client
-        for (name,(xvals,yvals)) in plot_vals.items():
-            self.send_message(json.dumps({'cmd':'update_plot','name':name,'x_values':xvals,'y_values':yvals}))
+        for (name,(xvals,yvals,opts)) in plot_vals.items():
+            self.send_message(json.dumps({'cmd':'update_plot','name':name,'x_values':xvals,'y_values':yvals,'options':opts}))
 
     def on_close(self):
         print "connection closing"

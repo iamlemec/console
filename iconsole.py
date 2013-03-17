@@ -26,6 +26,7 @@ logger = getLogger(__name__)
 
 # tornado options
 SERVER_PORT = 8080
+SERVER_PATH = "root_d3.html"
 
 # tornado content handlers
 class Application(tornado.web.Application):
@@ -79,7 +80,7 @@ class DataHandler(tornado.websocket.WebSocketHandler):
 
 class RootHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render("root_plot.html")
+        self.render(SERVER_PATH)
 
 class TestHandler(tornado.web.RequestHandler):
     def get(self,path):
@@ -163,6 +164,6 @@ socket_out.bind("tcp://0.0.0.0:6124")
 
 # plot tool
 def update_plot(name,x_vals,y_vals,**kwargs):
-    json_out = {'cmd':'update_plot','name':name,'x_values':map(unicode,x_vals),'y_values':map(unicode,y_vals),'options':kwargs}
+    json_out = {'cmd':'update_plot','name':name,'x_values':list(x_vals),'y_values':list(y_vals),'options':kwargs}
     socket_out.send(json.dumps(json_out))
 

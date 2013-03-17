@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <title>D3 test</title>
+    <script src="{{ static_url('js/jquery.min.js') }}" type="text/javascript"></script>
+    <script src="{{ static_url('js/d3.v3.js') }}" type="text/javascript"></script>
+    <script src="{{ static_url('js/underscore.js') }}" type="text/javascript"></script>
+  </head>
+
+  <style>
+    svg {
+      font: 10px sans-serif;
+    }
+ 
+    .line {
+      fill: none;
+      stroke: #000;
+      stroke-width: 1.5px;
+    }
+ 
+    .axis path, .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+
+    .title {
+      text-align: center;
+    }
+  </style>
+
+  <body>
+
+    <table><tbody id="plotTable"></tbody></table>
+
+    <script type="text/javascript">
+
+      var nplots = 0;
+      var table = d3.select("tbody#plotTable");
+
+      var base_width = 300;
+      var base_height = 200;
+      var margin = {top: 10, right: 10, bottom: 10, left: 10};
+      var width = base_width - margin.left - margin.right;
+      var height = base_height - margin.top - margin.bottom;
+
+      function create_plot(pname) {
+      }
+
+      function ensure_plot(pname)
+      {
+        td = table.select("td#"+pname)[0][0];
+        if (td == null) {
+          if (nplots % 2 == 0) {
+            row = table.append("tr");
+          } else {
+            row = d3.select(table.selectAll("tr")[0].pop());
+          }
+          col = row.append("td").attr("id",pname)
+          nplots++;
+
+          col.append("p").attr("class","title").html(pname);
+
+          var svg = col.append("svg")
+                       .attr("width",base_width)
+                       .attr("height",base_height)
+                       .append("g")
+                       .attr("transform","translate("+margin.left+","+margin.top+")");
+ 
+          var path = svg.append("g")
+                        .append("path")
+                        .attr("class", "line")
+                        .attr("id",pname);
+        }
+      }
+
+      function update_data(pname,data) {
+        n = data.length;
+        ymin = d3.min(data);
+        ymax = d3.max(data);
+        x = d3.scale.linear().domain([0,n-1]).range([0,width]);
+        y = d3.scale.linear().domain([ymin,ymax]).range([height,0]);
+        line = d3.svg.line().x(function(d, i) { return x(i); }).y(function(d, i) { return y(d); }).interpolate('monotone');
+        table.select("path#"+pname).data([data]).transition().attr("d",line).duration(100);
+      }
+
+      function connect()
+      {
+        if ('MozWebSocket' in window) {
+          WebSocket = MozWebSocket;
+        }
+        if ('WebSocket' in window) {
+          var ws_con = "ws://" + window.location.host + "/mec";
+          console.log(ws_con);
+
+          ws = new WebSocket(ws_con);
+
+          ws.onopen = function() {
+            console.log('websocket connected!');
+          };
+
+          ws.onmessage = function (evt) {
+            var receivedMsg = evt.data;
+
+            //console.log(receivedMsg);
+
+            var json_data = JSON.parse(receivedMsg);
+            if (json_data)
+            {
+              cmd = json_data["cmd"]
+              if (cmd == "update_plot") {
+                pname = json_data["name"]
+                x_values = json_data["x_values"]
+                y_values = json_data["y_values"]
+
+                if ("options" in json_data) {
+                  options = json_data["options"];
+                } else {
+                  options = {};
+                }
+
+                /*
+                var valArray = new Array();
+                for (i in x_values) {
+                  valArray[i] = [x_values[i],y_values[i]];
+                }
+                */
+
+                ensure_plot(pname);
+                update_data(pname,y_values);
+              }
+            }
+          };
+
+          ws.onclose = function() {
+            console.log('websocket closed');
+          };
+        } else {
+          console.log('Sorry, your browser does not support websockets.');
+        }
+      }
+
+      function disconnect()
+      {
+        if (ws) {
+          ws.close();
+        }
+      }
+
+      connect();
+
+    </script>
+  </body>
+</html>
+

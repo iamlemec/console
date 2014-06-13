@@ -13,11 +13,13 @@ randy[0] = randw[0]
 for i in range(1,n_base):
   randy[i] = pval*randy[i-1] + randw[i]
 upd_speed = 0.1
+upd_iter = 1
 
 theta0 = np.linspace(0.0,2.0*np.pi,n_base)
 theta = np.linspace(0.0,2.0*np.pi,n_base)
 
 # main loop
+show_iter = 0
 while True:
     sleep(upd_speed)
 
@@ -29,6 +31,9 @@ while True:
     theta += 0.2
 
     #print randw
-    ic.update_plot('random_walk',randx,np.exp(randy),yaxis={'min':0.5,'max':1.5})
-    ic.update_plot('sine_wave',theta0,np.sin(theta),yaxis={'min':-1.0,'max':1.0})
-
+    show_iter += 1
+    if show_iter == upd_iter:
+        ic.update_plot('random_walk',randx,np.exp(randy),yaxis={'min':0.5,'max':1.5},title="Random Walk")
+        ic.update_plot('sine_wave',theta0,np.sin(theta),yaxis={'min':-1.0,'max':1.0},title="Sine Wave")
+        ic.update_plot('cosine_wave',theta0,np.cos(theta),yaxis={'min':-1.0,'max':1.0},title="Cosine Wave")
+        show_iter = 0

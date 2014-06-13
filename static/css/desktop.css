@@ -1,0 +1,45 @@
+body {
+  font-family: "Open Sans",sans-serif;
+}
+
+div.outer_box {
+  width: 500px;
+  padding: 0px;
+  margin: 0px auto;
+}
+
+div.figure_box {
+  border: 1px solid #CCC;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10px;
+  width: 100%;
+}
+
+div.figure_title {
+  margin-bottom: 30px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 15pt;
+}
+
+div.plot_box {
+}
+
+svg {
+  font: 10px sans-serif;
+}
+
+.line {
+  fill: none;
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}

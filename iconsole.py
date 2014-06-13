@@ -57,8 +57,8 @@ class DataHandler(tornado.websocket.WebSocketHandler):
         self._server.clients.add(self)
 
         # initiate client
-        for (name,(xvals,yvals,opts)) in self._server.plot_vals.items():
-            self.send_message(json.dumps({'cmd':'update_plot','name':name,'x_values':xvals,'y_values':yvals,'options':opts}))
+        for (label,(xvals,yvals,opts)) in self._server.plot_vals.items():
+            self.send_message(json.dumps({'cmd':'update_plot','label':label,'x_values':xvals,'y_values':yvals,'options':opts}))
 
     def on_close(self):
         print "connection closing"
@@ -89,7 +89,7 @@ class TestHandler(tornado.web.RequestHandler):
 class ConsoleServer(threading.Thread):
     def __init__(self):
         from tornado.ioloop import IOLoop
-        from zmq.eventloop.ioloop import ZMQPoller
+        from zmq.eventloop.ioloop import ZMQIOLoop
 
         super(ConsoleServer,self).__init__()
 
@@ -102,8 +102,8 @@ class ConsoleServer(threading.Thread):
         self.clients = set()
         self.plot_vals = OrderedDict()
 
-        # tornado and zmq place nice?
-        self.ioloop = IOLoop(ZMQPoller())
+        # tornado and zmq play nice?
+        self.ioloop = ZMQIOLoop()
 
     def run(self):
         try:
@@ -143,10 +143,10 @@ class ConsoleServer(threading.Thread):
         for s in msg:
             # store internally
             json_data = json.loads(s)
-            name = json_data['name']
+            label = json_data['label']
             cmd = json_data['cmd']
             if cmd == 'update_plot':
-                self.plot_vals[name] = (json_data['x_values'],json_data['y_values'],json_data['options'])
+                self.plot_vals[label] = (json_data['x_values'],json_data['y_values'],json_data['options'])
 
             # broadcast to clients
             for c in self.clients:
@@ -163,7 +163,6 @@ socket_out = context.socket(zmq.PUB)
 socket_out.bind("tcp://0.0.0.0:6124")
 
 # plot tool
-def update_plot(name,x_vals,y_vals,**kwargs):
-    json_out = {'cmd':'update_plot','name':name,'x_values':list(x_vals),'y_values':list(y_vals),'options':kwargs}
+def update_plot(label,x_vals,y_vals,**kwargs):
+    json_out = {'cmd':'update_plot','label':label,'x_values':list(x_vals),'y_values':list(y_vals),'options':kwargs}
     socket_out.send(json.dumps(json_out))
-

@@ -34,7 +34,7 @@ def getLogger(name):
 logger = getLogger(__name__)
 
 # tornado options
-SERVER_PATH = "/media/Liquid/work/console"
+SERVER_PATH = "." # be sure to set this when using from other directories
 SERVER_FILE = "root.html"
 
 # tornado defaults

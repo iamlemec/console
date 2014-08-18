@@ -1,6 +1,13 @@
-import iconsole as ic
 import numpy as np
 from time import sleep
+from iconsole import IConsole
+
+# start server and create figures
+ic = IConsole()
+sleep(1.0)
+fig1 = ic.create_plot().title('Random Walk').yrange(0.5,1.5)
+fig2 = ic.create_plot().title('Sine Wave').yrange(-1.0,1.0)
+fig3 = ic.create_plot().title('Cosine Wave').yrange(-1.0,1.0)
 
 # constants
 ar_var = 0.05
@@ -30,10 +37,9 @@ while True:
 
     theta += 0.2
 
-    #print randw
     show_iter += 1
     if show_iter == upd_iter:
-        ic.update_plot('random_walk',randx,np.exp(randy),yaxis={'min':0.5,'max':1.5},title="Random Walk")
-        ic.update_plot('sine_wave',theta0,np.sin(theta),yaxis={'min':-1.0,'max':1.0},title="Sine Wave")
-        ic.update_plot('cosine_wave',theta0,np.cos(theta),yaxis={'min':-1.0,'max':1.0},title="Cosine Wave")
+        fig1.data(randx,np.exp(randy))
+        fig2.data(theta0,np.sin(theta))
+        fig3.data(theta0,np.cos(theta))
         show_iter = 0

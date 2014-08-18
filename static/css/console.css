@@ -1,0 +1,107 @@
+@media (min-width: 800px) {
+  body {
+    background-color: #C8C8C8;
+  }
+
+  div.outer_box {
+    width: 500px;
+    padding: 0px;
+    margin: 0px auto;
+  }
+
+  div.figure_box {
+    background-color: white;
+    box-shadow: 1px 1px 4px #AAA, 0 0 1em #AAA, 2px 2px 0.5em #AAA;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 10px;
+    width: 100%;
+  }
+
+  div.figure_title {
+    font-family: "Open Sans",sans-serif;
+    color: #444;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15pt;
+  }
+
+  div.plot_box {
+  }
+
+  svg {
+    font: 10px sans-serif;
+  }
+
+  .line {
+    fill: none;
+    stroke: #444;
+    stroke-width: 1.2px;
+  }
+
+  .axis path, .axis line {
+    fill: none;
+    stroke: #333;
+    shape-rendering: crispEdges;
+  }
+}
+
+@media (max-width: 800px) {
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: "Open Sans",sans-serif;
+    margin: 0px;
+  }
+
+  div.outer_box {
+    padding: 0px;
+    margin: 0px auto;
+    width: 100%;
+  }
+
+  div.figure_box {
+    border-bottom: 1px solid #CCC;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    padding: 10px;
+  }
+
+  div.figure_title {
+    margin-bottom: 30px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 15pt;
+    width: 100%;
+  }
+
+  div.plot_box {
+  }
+
+  svg {
+    font: 10px sans-serif;
+  }
+
+  .line {
+    fill: none;
+    stroke: #000;
+    stroke-width: 1.5px;
+  }
+
+  .axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .title {
+    text-align: center;
+  }
+}

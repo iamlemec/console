@@ -62,27 +62,27 @@
   div.outer_box {
     padding: 0px;
     margin: 0px auto;
-    width: 100%;
+    width: 100% !important;
   }
 
   div.figure_box {
     border-bottom: 1px solid #CCC;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 0px;
-    padding: 10px;
+    margin: 0px;
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 10px;
+    padding-bottom: 20px;
   }
 
   div.figure_title {
-    margin-bottom: 30px;
     text-align: center;
     font-weight: 600;
     font-size: 15pt;
-    width: 100%;
+    width: 100% !important;
   }
 
   div.plot_box {
+    width: 100% !important;
   }
 
   svg {
@@ -99,9 +99,5 @@
     fill: none;
     stroke: #000;
     shape-rendering: crispEdges;
-  }
-
-  .title {
-    text-align: center;
   }
 }

@@ -15,7 +15,7 @@ var box = d3.select("div.outer_box");
 // figure geometry
 var base_width = Math.min(screen.width,500);
 var base_height = 0.6*base_width;
-var margin = {top: 10, right: 10, bottom: 20, left: 30};
+var margin = {top: 20, bottom: 20, left: 40, right: 20};
 var width = base_width - margin.left - margin.right;
 var height = base_height - margin.top - margin.bottom;
 

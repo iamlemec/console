@@ -33,10 +33,6 @@ def getLogger(name):
 
 logger = getLogger(__name__)
 
-# tornado options
-SERVER_PATH = "/media/Liquid/work/console" # be sure to set this when using from other directories
-SERVER_FILE = "root.html"
-
 # tornado defaults
 HTTP_PORT = 8080
 
@@ -52,8 +48,8 @@ class Application(tornado.web.Application):
         ]
         settings = dict(
             app_name=u"Websockets test",
-            template_path=os.path.join(SERVER_PATH, "templates"),
-            static_path=os.path.join(SERVER_PATH, "static"),
+            template_path="templates",
+            static_path="static",
             xsrf_cookies=True,
         )
         tornado.web.Application.__init__(self, handlers, debug=True, io_loop=io_loop, **settings)
@@ -108,7 +104,7 @@ class DataHandler(tornado.websocket.WebSocketHandler):
 
 class RootHandler(tornado.web.RequestHandler):
     def get(self):
-        self.render(SERVER_FILE)
+        self.render("root.html")
 
 class ConsoleServer(threading.Thread):
     def __init__(self,zmq_port,http_port):
@@ -134,7 +130,7 @@ class ConsoleServer(threading.Thread):
             self.context = zmq.Context()
             self.socket_in = self.context.socket(zmq.SUB)
             self.socket_in.connect("tcp://0.0.0.0:"+str(self.zmq_port))
-            self.socket_in.setsockopt(zmq.SUBSCRIBE,"")
+            self.socket_in.setsockopt_string(zmq.SUBSCRIBE,"")
 
             # input handler
             self.stream = zmqstream.ZMQStream(self.socket_in,io_loop=self.ioloop)
@@ -159,7 +155,7 @@ class ConsoleServer(threading.Thread):
     def on_recv(self,msg):
         for s in msg:
             # store internally
-            json_data = json.loads(s)
+            json_data = json.loads(s.decode())
             label = json_data.get('label','')
             cmd = json_data.get('cmd','')
             if cmd == 'create_plot':

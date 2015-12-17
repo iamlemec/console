@@ -141,7 +141,7 @@ function redraw(plabel,comps) {
   }
 
   // generate transition
-  var t = d3.transition().duration(0);
+  var t = d3.transition().duration(200);
   if (comps.contains('xaxis')) {
     var xAxis = d3.svg.axis().scale(x).ticks(10);
     t.select("g.x.axis#"+plabel).call(xAxis);

@@ -34,7 +34,7 @@ def getLogger(name):
 logger = getLogger(__name__)
 
 # tornado options
-SERVER_PATH = "." # be sure to set this when using from other directories
+SERVER_PATH = "/media/Liquid/work/console" # be sure to set this when using from other directories
 SERVER_FILE = "root.html"
 
 # tornado defaults
@@ -66,7 +66,7 @@ class DataHandler(tornado.websocket.WebSocketHandler):
         return True
 
     def open(self):
-        #print "connection received"
+        #print("connection received")
         self._server = self.application._server
         self._server.clients.add(self)
 
@@ -88,16 +88,16 @@ class DataHandler(tornado.websocket.WebSocketHandler):
                 self.send_message(json.dumps({'cmd':'set_options','label':label,'options':info['options']}))
 
     def on_close(self):
-        #print "connection closing"
+        #print("connection closing")
         self._server.clients.remove(self)
 
     def error_msg(self, error_code):
         if not error_code is None:
             json_string=json.dumps({"type":"error","code":error_code})
-            print "sending error to client"
+            print("sending error to client")
             self.write_message("{0}".format(json_string))
         else:
-            print "Eror code not found"
+            print("Eror code not found")
 
     def on_message(self, message):
         #print "received message: {0}".format(message)
@@ -188,7 +188,7 @@ class ConsoleServer(threading.Thread):
 # do dataframe stuff
 def dataframe(xv,yv):
     df = np.vstack(map(np.ravel,[xv,yv]))
-    return tuple(map(list,df[:,~np.isnan(df).any(axis=0)]))
+    return (s.tolist() for s in df[:,~np.isnan(df).any(axis=0)])
 
 class IConsole(object):
     def __init__(self,http_port=None,zmq_port=None):
@@ -215,7 +215,7 @@ class IConsole(object):
 
     def stop(self):
         json_out = {'cmd':'die'}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
         self.socket_out.unbind("tcp://0.0.0.0:"+str(self.zmq_port))
         self.context.destroy()
         del self.thread
@@ -225,43 +225,43 @@ class IConsole(object):
     # plot tools
     def set_title(self,label,title):
         json_out = {'cmd':'set_title','label':label,'title':title}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
     def set_xrange(self,label,xmin,xmax):
         json_out = {'cmd':'set_xrange','label':label,'xmin':xmin,'xmax':xmax}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
     def set_yrange(self,label,ymin,ymax):
         json_out = {'cmd':'set_yrange','label':label,'ymin':ymin,'ymax':ymax}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
     def set_options(self,label,options):
         json_out = {'cmd':'set_options','label':label,'options':options}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
     def set_data(self,label,x_vals,y_vals=None):
         if y_vals is None:
             y_vals = x_vals
             x_vals = range(len(x_vals))
         if len(x_vals) != len(y_vals):
-            print 'Input vectors must be same length.'
+            print('Input vectors must be same length.')
             return
 
         (x_fix,y_fix) = dataframe(x_vals,y_vals)
         json_out = {'cmd':'set_data','label':label,'x_values':x_fix,'y_values':y_fix}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
     def create_plot(self,label=None):
         if label is None:
             label = 'figure_%016x'%(random.getrandbits(64))
         logger.debug('Create plot: ' + label)
         json_out = {'cmd':'create_plot','label':label}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
         return IFigure(self,label)
 
     def remove_plot(self,label):
         json_out = {'cmd':'remove_plot','label':label}
-        self.socket_out.send(json.dumps(json_out))
+        self.socket_out.send_string(json.dumps(json_out))
 
 # this is just a wrapper that allows chaining
 class IFigure(object):

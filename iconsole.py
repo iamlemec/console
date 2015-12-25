@@ -42,14 +42,20 @@ ZMQ_PORT = 6124
 # tornado content handlers
 class Application(tornado.web.Application):
     def __init__(self,io_loop=None):
+        if os.path.islink(__file__):
+          server_file = os.readlink(__file__)
+        else:
+          server_file = __file__
+        server_dir = os.path.dirname(server_file)
+
         handlers = [
             (r"/", RootHandler),
             (r"/mec", DataHandler)
         ]
         settings = dict(
             app_name=u"Websockets test",
-            template_path="templates",
-            static_path="static",
+            template_path=os.path.join(server_dir,"templates"),
+            static_path=os.path.join(server_dir,"static"),
             xsrf_cookies=True,
         )
         tornado.web.Application.__init__(self, handlers, debug=True, io_loop=io_loop, **settings)

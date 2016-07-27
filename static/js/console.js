@@ -111,6 +111,17 @@ function set_data(plabel,x_data,y_data) {
   redraw(plabel,comps);
 }
 
+function set_vega(plabel,spec) {
+  var targ = "#" + plabel + " > .plot_box";
+  var embedSpec = {
+    mode: "vega-lite",
+    spec: spec
+  };
+  vg.embed(targ,embedSpec,function(error,result) {
+    console.log("embed returned:");
+  });
+}
+
 function redraw(plabel,comps) {
   //console.log(comps);
 
@@ -202,6 +213,11 @@ function connect()
           var x_values = json_data["x_values"];
           var y_values = json_data["y_values"];
           set_data(plabel,x_values,y_values);
+        } else if (cmd == "set_vega") {
+          console.log('got some vega!');
+          console.log(json_data['spec']);
+          var spec = JSON.parse(json_data["spec"]);
+          set_vega(plabel,spec);
         }
       }
     };

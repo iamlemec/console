@@ -34,7 +34,7 @@ def getLogger(name):
 logger = getLogger(__name__)
 
 # tornado defaults
-HTTP_PORT = 8080
+HTTP_PORT = 9010
 
 # zmq defaults
 ZMQ_PORT = 6124
@@ -178,6 +178,8 @@ class ConsoleServer(threading.Thread):
                 self.plot_vals[label]['options'] = json_data['options']
             elif cmd == 'set_data':
                 self.plot_vals[label]['data'] = (json_data['x_values'],json_data['y_values'])
+            elif cmd == 'set_vega':
+                self.plot_vals[label]['spec'] = json_data['spec']
 
             # broadcast to clients
             for c in self.clients:
@@ -224,6 +226,9 @@ class IConsole(object):
         del self.socket_out
         del self.context
 
+    # def send_command(self,d):
+    #     self.socket_out.send_string(json.dumps(d))
+
     # plot tools
     def set_title(self,label,title):
         json_out = {'cmd':'set_title','label':label,'title':title}
@@ -251,6 +256,10 @@ class IConsole(object):
 
         (x_fix,y_fix) = dataframe(x_vals,y_vals)
         json_out = {'cmd':'set_data','label':label,'x_values':x_fix,'y_values':y_fix}
+        self.socket_out.send_string(json.dumps(json_out))
+
+    def set_vega(self,label,spec):
+        json_out = {'cmd':'set_vega','label':label,'spec':spec}
         self.socket_out.send_string(json.dumps(json_out))
 
     def create_plot(self,label=None):
@@ -296,6 +305,17 @@ class IFigure(object):
     def data(self,x_vals,y_vals=None):
         if self.active:
             self.ic.set_data(self.label,x_vals,y_vals)
+        return self
+
+    def vega(self,spec):
+        if self.active:
+            self.ic.set_vega(self.label,spec)
+        return self
+
+    def altair(self,chart):
+        if self.active:
+            spec = json.dumps(chart.to_dict())
+            self.ic.set_vega(self.label,spec)
         return self
 
     def remove(self):

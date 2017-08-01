@@ -17,7 +17,8 @@
     margin-left: auto;
     margin-right: auto;
     padding: 10px;
-    width: 100%;
+    width: 500px;
+    min-height: 450px;
   }
 
   div.figure_title {
@@ -30,22 +31,6 @@
   }
 
   div.plot_box {
-  }
-
-  svg {
-    font: 10px sans-serif;
-  }
-
-  .line {
-    fill: none;
-    stroke: #444;
-    stroke-width: 1.2px;
-  }
-
-  .axis path, .axis line {
-    fill: none;
-    stroke: #333;
-    shape-rendering: crispEdges;
   }
 }
 
@@ -83,21 +68,5 @@
 
   div.plot_box {
     width: 100% !important;
-  }
-
-  svg {
-    font: 10px sans-serif;
-  }
-
-  .line {
-    fill: none;
-    stroke: #000;
-    stroke-width: 1.5px;
-  }
-
-  .axis path, .axis line {
-    fill: none;
-    stroke: #000;
-    shape-rendering: crispEdges;
   }
 }

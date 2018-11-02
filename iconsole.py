@@ -167,6 +167,7 @@ class IConsole(object):
     def __init__(self, http_port=None, zmq_port=None):
         self.http_port = http_port if http_port else HTTP_PORT
         self.zmq_port = zmq_port if zmq_port else ZMQ_PORT
+        self.started = False
         self.start()
 
     def __del__(self):
@@ -174,6 +175,9 @@ class IConsole(object):
 
     # server tools
     def start(self):
+        if self.started:
+            return
+
         # run the thread
         self.thread = ConsoleServer(zmq_port=self.zmq_port, http_port=self.http_port)
         self.thread.start()
@@ -183,14 +187,21 @@ class IConsole(object):
         self.socket_out = self.context.socket(zmq.PUB)
         self.socket_out.bind("tcp://0.0.0.0:"+str(self.zmq_port))
 
+        self.started = True
+
     def stop(self):
-        json_out = {'cmd': 'die'}
-        self.socket_out.send_string(json.dumps(json_out))
+        if not self.started:
+            return
+
+        self.send_message({'cmd': 'die'})
         self.socket_out.unbind("tcp://0.0.0.0:"+str(self.zmq_port))
         self.context.destroy()
+
         del self.thread
         del self.socket_out
         del self.context
+
+        self.started = False
 
     def send_message(self, d):
         self.socket_out.send_string(json.dumps(d))

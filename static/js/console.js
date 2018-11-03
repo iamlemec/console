@@ -22,28 +22,27 @@ function remove_plot(plabel) {
   }
 }
 
+// remove all plots
+function clear_plots() {
+  box.empty();
+}
+
 function set_title(plabel,title) {
   box.find(".figure_box#"+plabel+" > .figure_title").html(title);
 }
 
 function set_vega(plabel,spec) {
   var targ = "#" + plabel + " > .plot_box";
+  spec["$schema"] = "https://vega.github.io/schema/vega-lite/v3.json";
+  spec["width"] = 400;
+  spec["height"] = 300;
+  vegaEmbed(targ,spec);
+}
+
+function set_svg(plabel,svg) {
+  var targ = "#" + plabel + " > .plot_box";
   var vtarg = $(targ);
-  var twidth = vtarg.width();
-  var size = {'width': 400, 'height': 300};
-  if ('config' in spec) {
-    var conf = spec['config'];
-    conf['cell'] = size;
-  } else {
-    spec['config'] = {'cell': size};
-  }
-  var embedSpec = {
-    mode: "vega-lite",
-    spec: spec
-  };
-  vg.embed(targ,embedSpec,function(error,result) {
-    vtarg.children('.vega-actions').hide();
-  });
+  vtarg.html(svg);
 }
 
 function connect()
@@ -65,7 +64,7 @@ function connect()
 
     ws.onmessage = function (evt) {
       var receivedMsg = evt.data;
-      // console.log(receivedMsg);
+      console.log(receivedMsg);
 
       var json_data = JSON.parse(receivedMsg);
       if (json_data)
@@ -76,12 +75,17 @@ function connect()
           ensure_plot(plabel);
         } else if (cmd == "remove_plot") {
           remove_plot(plabel);
+        } else if (cmd == "clear_plots") {
+          clear_plots();
         } else if (cmd == "set_title") {
           title = json_data["title"];
           set_title(plabel,title);
         } else if (cmd == "set_vega") {
-          var spec = JSON.parse(json_data["spec"]);
+          var spec = json_data["spec"];
           set_vega(plabel,spec);
+        } else if (cmd == "set_svg") {
+          var svg = json_data["svg"];
+          set_svg(plabel,svg);
         }
       }
     };

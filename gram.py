@@ -6,6 +6,10 @@ import numpy as np
 # native format is SVG + CSS
 # use cairosvg to convert to PDF/PNG
 
+# defaults
+stroke_width = 0.25
+
+# generators
 def gen_css(sel, rules):
     css = f'{sel} {{\n'
     for k, v in rules.items():
@@ -18,7 +22,7 @@ def gen_attr(attr):
     return ' '.join([f'{k}="{v}"' for k, v in props.items()])
 
 class Canvas:
-    def __init__(self, root=None, box=(0, 0, 100, 100), **attr):
+    def __init__(self, root=None, box=(0, 0, 100, 80), **attr):
         self.box = box
         self.root = root
         self.attr = attr
@@ -108,7 +112,7 @@ class Line(Element):
             'x2': self.x2,
             'y2': self.y2,
             'stroke': 'black',
-            'stroke-width': 0.3
+            'stroke-width': stroke_width
         }
 
 class Path(Element):
@@ -122,7 +126,7 @@ class Path(Element):
         return {
             'd': ' '.join(data),
             'stroke': 'black',
-            'stroke-width': 0.3,
+            'stroke-width': stroke_width,
             'fill': 'none'
         }
 
@@ -155,13 +159,12 @@ class Arrow(Group):
         # print(f'dxl = {dxl}, dyl = {dyl}')
 
         # generate children
-        line = Line(x1, y1, x2, y2)
-        arrow = Path([pointh, (x2, y2), pointl])
-
-        self.children = [line, arrow]
+        self.line = Line(x1, y1, x2, y2)
+        self.arrow = Path([pointh, (x2, y2), pointl])
+        self.children = [self.line, self.arrow]
 
 class Axis(Group):
-    def __init__(self, x, y, orient, length, ticks, labels=None, tick_size=1, **attr):
+    def __init__(self, x, y, orient, length, ticks=None, labels=None, tick_size=0.6, arrow=False, **attr):
         super().__init__(**attr)
 
         if orient == 'h' or orient == 'horizontal':
@@ -171,24 +174,43 @@ class Axis(Group):
         orient = math.radians(orient)
 
         if type(ticks) is int:
-            ticks = np.linspace(0, length, ticks)
+            ticks = np.linspace(0, length, ticks+2)[1:-1]
 
-        if labels is None:
+        if labels is None and ticks is not None:
             labels = np.arange(len(ticks))
-        labels = [str(s) for s in labels]
+        if labels is not None:
+            labels = [str(s) for s in labels]
 
         dx = length*math.cos(orient)
-        dy = length*math.sin(orient)
+        dy = -length*math.sin(orient)
 
-        tx = tick_size*math.sin(orient)
-        ty = tick_size*math.cos(orient)
+        self.children = []
 
-        points = [(dx*t, dy*t) for t in ticks]
+        if arrow:
+            self.line = Arrow(x, y, x+dx, y+dy)
+            self.children = [self.line]
+        else:
+            self.line = Line(x, y, x+dx, y+dy)
+            self.children += [self.line]
 
-        arrow = Arrow(x, y, x+dx, y+dy)
-        lines = [Line(zx-tx, zy-ty, zx+tx, zy+ty) for zx, zy in points]
+        if ticks is not None:
+            tx = tick_size*math.sin(orient)
+            ty = tick_size*math.cos(orient)
+            points = [(x+dx*t/length, y+dy*t/length) for t in ticks]
+            self.ticks = [Line(zx-tx, zy-ty, zx+tx, zy+ty) for zx, zy in points]
+            self.children += self.ticks
 
-        self.children = [arrow] + lines
+class Axes(Group):
+    def __init__(self, x, y, width, height, xattr={}, yattr={}, **attr):
+        super().__init__(**attr)
+
+        self.xaxis = Axis(x, y, 'h', width, **xattr)
+        self.yaxis = Axis(x, y, 'v', height, **yattr)
+        self.children = [self.xaxis, self.yaxis]
 
 class Plot(Group):
-    pass
+    def __init__(self, x, y, width, height, data, xattr={}, yattr={}, **attr):
+        super().__init__(**attr)
+
+        self.axes = Axes(x, y, width, height, xattr=xattr, yattr=yattr)
+        self.line = Path(x, y, data)

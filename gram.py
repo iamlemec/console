@@ -156,16 +156,19 @@ class Arrow(Group):
 class Ticks(Group):
     def __init__(self, pos, dx, dy, **attr):
         children = [Line(x, y, x+dx, y+dy) for x, y in pos]
-        super().__init__(children=children, klass='ticks', **attr)
+        attr1 = dict(shape_rendering='crispEdges', **attr)
+        super().__init__(children=children, klass='ticks', **attr1)
 
 class Axes(Path):
     def __init__(self, x, y, w, h, **attr):
         points = [(x, y-h), (x, y), (x+w, y)]
-        super().__init__(points, klass='axes', **attr)
+        attr1 = dict(shape_rendering='crispEdges', **attr)
+        super().__init__(points, klass='axes', **attr1)
 
 class Graph(Path):
     def __init__(self, xdata, ydata, x, y, w, h, xmin=None, xmax=None, ymin=None, ymax=None, pad=0.05, **attr):
         xdata1 = scale(xdata, x, x+w, dmin=xmin, dmax=xmax, pad=pad)
         ydata1 = scale(ydata, y, y-h, dmin=ymin, dmax=ymax, pad=pad)
         points = [d for d in zip(xdata1, ydata1)]
-        super().__init__(points, klass='graph', **attr)
+        attr1 = dict(shape_rendering='geometricPrecision', **attr)
+        super().__init__(points, klass='graph', **attr1)

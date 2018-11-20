@@ -39,10 +39,13 @@ function set_vega(plabel,spec) {
   vegaEmbed(targ,spec);
 }
 
-function set_svg(plabel,svg) {
+function set_svg(plabel,svg,css) {
   var targ = "#" + plabel + " > .plot_box";
   var vtarg = $(targ);
   vtarg.html(svg);
+  var vcss = $("<style>", {figure: plabel, html: css});
+  $("head > style[figure=\"" + plabel + "\"]").remove();
+  $("head").append(vcss);
 }
 
 function connect()
@@ -85,7 +88,8 @@ function connect()
           set_vega(plabel,spec);
         } else if (cmd == "set_svg") {
           var svg = json_data["svg"];
-          set_svg(plabel,svg);
+          var css = json_data["css"]
+          set_svg(plabel,svg,css);
         }
       }
     };

@@ -88,7 +88,7 @@ class DataHandler(tornado.websocket.WebSocketHandler):
                 if 'spec' in info:
                     self.send_message({'cmd': 'set_vega', 'label': label, 'spec': info['spec']})
                 if 'svg' in info:
-                    self.send_message({'cmd': 'set_svg', 'label': label, 'svg': info['svg']})
+                    self.send_message({'cmd': 'set_svg', 'label': label, 'svg': info['svg'], 'css': info['css']})
 
 
 class RootHandler(tornado.web.RequestHandler):
@@ -162,6 +162,7 @@ class ConsoleServer(threading.Thread):
                 self.plots[label]['spec'] = json_data['spec']
             elif cmd == 'set_svg':
                 self.plots[label]['svg'] = json_data['svg']
+                self.plots[label]['css'] = json_data['css']
 
             # broadcast to clients
             for c in self.clients:
@@ -236,8 +237,8 @@ class Console(object):
     def set_vega(self, label, spec):
         self.send_message({'cmd': 'set_vega', 'label': label, 'spec': spec})
 
-    def set_svg(self, label, svg):
-        self.send_message({'cmd': 'set_svg', 'label': label, 'svg': svg})
+    def set_svg(self, label, svg, css=''):
+        self.send_message({'cmd': 'set_svg', 'label': label, 'svg': svg, 'css': css})
 
 # this is just a wrapper that allows chaining
 class Figure(object):
@@ -266,9 +267,9 @@ class Figure(object):
             self.ic.set_vega(self.label, spec)
         return self
 
-    def svg(self, svg):
+    def svg(self, svg, css=''):
         if self.active:
-            self.ic.set_svg(self.label, svg)
+            self.ic.set_svg(self.label, svg, css)
         return self
 
     def remove(self):

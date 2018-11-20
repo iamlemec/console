@@ -6,9 +6,6 @@ import numpy as np
 # native format is SVG + CSS
 # use cairosvg to convert to PDF/PNG
 
-# defaults
-stroke_width = 0.25
-
 # generators
 def gen_css(sel, rules):
     css = f'{sel} {{\n'
@@ -18,8 +15,18 @@ def gen_css(sel, rules):
     return css
 
 def gen_attr(attr):
-    props = {k.replace('_', '-'): v for k, v in attr.items()}
+    props = {k.replace('_', '-'): v for k, v in attr.items() if v is not None}
     return ' '.join([f'{k}="{v}"' for k, v in props.items()])
+
+# data tools
+def scale(data, zmin, zmax, dmin=None, dmax=None, pad=0.05):
+    if dmin is None:
+        dmin = min(data)
+    if dmax is None:
+        dmax = max(data)
+    frac = [(d-dmin)/(dmax-dmin) for d in data]
+    data1 = [zmin+(zmax-zmin)*(pad+(1-2*pad)*f) for f in frac]
+    return data1
 
 class Canvas:
     def __init__(self, root=None, box=(0, 0, 100, 80), **attr):
@@ -51,89 +58,70 @@ class Canvas:
         else:
             raise
 
-# shell element class
+# element interface
 class Element:
     # store core attributes and extra attributes
-    def __init__(self, tag, **attr):
+    def __init__(self, tag, klass=None, **attr):
         self.tag = tag
         self.attr = attr
 
-    # return dictionary of properties for the top level tag
-    def props(self):
-        return {}
+        # hack because you can't use class as a keyword
+        if klass is not None:
+            self.attr['class'] = klass
 
     # return string wrapper and inner content given
     def render(self, inner=None):
-        attr0 = self.props()
-        attr1 = dict(attr0, **self.attr)
-        props = gen_attr(attr1)
+        props = gen_attr(self.attr)
         if inner is None:
             return f'<{self.tag} {props} />'
         else:
             return f'<{self.tag} {props}>\n{inner}\n</{self.tag}>'
 
+# parent/child interface
 class Group(Element):
-    def __init__(self, tag='g', children=[], **attr):
+    def __init__(self, children={}, tag='g', **attr):
         super().__init__(tag, **attr)
         self.children = children
 
     def render(self):
-        inner = '\n'.join([c.render() for c in self.children])
+        elems = self.children.values() if type(self.children) is dict else self.children
+        inner = '\n'.join([e.render() for e in elems])
         return super().render(inner)
 
 class Text(Element):
     def __init__(self, x, y, text, **attr):
-        super().__init__('text', **attr)
-        self.x = x
-        self.y = y
         self.text = text
-
-    def props(self):
-        return {
-            'x': self.x,
-            'y': self.y
-        }
+        attr1 = dict(x=x, y=y, **attr)
+        super().__init__('text', **attr1)
 
     def render(self):
         return super().render(self.text)
 
 class Line(Element):
     def __init__(self, x1, y1, x2, y2, **attr):
-        super().__init__('line', **attr)
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-
-    def props(self):
-        return {
-            'x1': self.x1,
-            'y1': self.y1,
-            'x2': self.x2,
-            'y2': self.y2,
-            'stroke': 'black',
-            'stroke-width': stroke_width
-        }
+        attr1 = dict(x1=x1, y1=y1, x2=x2, y2=y2, **attr)
+        super().__init__('line', **attr1)
 
 class Path(Element):
     def __init__(self, points, **attr):
-        super().__init__('path', **attr)
-        self.points = points
+        x0, y0 = points[0]
+        data = [f'M {x0},{y0}'] + [f'L {x},{y}' for x, y in points[1:]]
+        path = ' '.join(data)
+        attr1 = dict(d=path, fill='none', **attr)
+        super().__init__('path', **attr1)
 
-    def props(self):
-        x0, y0 = self.points[0]
-        data = [f'M {x0},{y0}'] + [f'L {x},{y}' for x, y in self.points[1:]]
-        return {
-            'd': ' '.join(data),
-            'stroke': 'black',
-            'stroke-width': stroke_width,
-            'fill': 'none'
-        }
+class Circle(Element):
+    def __init__(self, cx, cy, r, **attr):
+        attr1 = dict(cx=cx, cy=cy, r=r, **attr)
+        super().__init__('circle', **attr1)
+
+class Ellipse(Element):
+    def __init__(self, cx, cy, rx, ry, **attr):
+        attr1 = dict(cx=cx, cy=cy, rx=rx, ry=ry, **attr)
+        super().__init__('ellipse', **attr1)
 
 class Arrow(Group):
     def __init__(self, x1, y1, x2, y2, theta=45, length=1, **attr):
-        super().__init__(**attr)
-
         # calculate arrow path
         rtheta = math.radians(theta)
         deg90 = math.radians(90)
@@ -159,58 +147,25 @@ class Arrow(Group):
         # print(f'dxl = {dxl}, dyl = {dyl}')
 
         # generate children
-        self.line = Line(x1, y1, x2, y2)
-        self.arrow = Path([pointh, (x2, y2), pointl])
-        self.children = [self.line, self.arrow]
+        children = {
+            'line': Line(x1, y1, x2, y2),
+            'head': Path([pointh, (x2, y2), pointl])
+        }
+        super().__init__(children, klass='arrow', **attr)
 
-class Axis(Group):
-    def __init__(self, x, y, orient, length, ticks=None, labels=None, tick_size=0.6, arrow=False, **attr):
-        super().__init__(**attr)
+class Ticks(Group):
+    def __init__(self, pos, dx, dy, **attr):
+        children = [Line(x, y, x+dx, y+dy) for x, y in pos]
+        super().__init__(children=children, klass='ticks', **attr)
 
-        if orient == 'h' or orient == 'horizontal':
-            orient = 0
-        elif orient == 'v' or orient == 'vertical':
-            orient = 90
-        orient = math.radians(orient)
+class Axes(Path):
+    def __init__(self, x, y, w, h, **attr):
+        points = [(x, y-h), (x, y), (x+w, y)]
+        super().__init__(points, klass='axes', **attr)
 
-        if type(ticks) is int:
-            ticks = np.linspace(0, length, ticks+2)[1:-1]
-
-        if labels is None and ticks is not None:
-            labels = np.arange(len(ticks))
-        if labels is not None:
-            labels = [str(s) for s in labels]
-
-        dx = length*math.cos(orient)
-        dy = -length*math.sin(orient)
-
-        self.children = []
-
-        if arrow:
-            self.line = Arrow(x, y, x+dx, y+dy)
-            self.children = [self.line]
-        else:
-            self.line = Line(x, y, x+dx, y+dy)
-            self.children += [self.line]
-
-        if ticks is not None:
-            tx = tick_size*math.sin(orient)
-            ty = tick_size*math.cos(orient)
-            points = [(x+dx*t/length, y+dy*t/length) for t in ticks]
-            self.ticks = [Line(zx-tx, zy-ty, zx+tx, zy+ty) for zx, zy in points]
-            self.children += self.ticks
-
-class Axes(Group):
-    def __init__(self, x, y, width, height, xattr={}, yattr={}, **attr):
-        super().__init__(**attr)
-
-        self.xaxis = Axis(x, y, 'h', width, **xattr)
-        self.yaxis = Axis(x, y, 'v', height, **yattr)
-        self.children = [self.xaxis, self.yaxis]
-
-class Plot(Group):
-    def __init__(self, x, y, width, height, data, xattr={}, yattr={}, **attr):
-        super().__init__(**attr)
-
-        self.axes = Axes(x, y, width, height, xattr=xattr, yattr=yattr)
-        self.line = Path(x, y, data)
+class Graph(Path):
+    def __init__(self, xdata, ydata, x, y, w, h, xmin=None, xmax=None, ymin=None, ymax=None, pad=0.05, **attr):
+        xdata1 = scale(xdata, x, x+w, dmin=xmin, dmax=xmax, pad=pad)
+        ydata1 = scale(ydata, y, y-h, dmin=ymin, dmax=ymax, pad=pad)
+        points = [d for d in zip(xdata1, ydata1)]
+        super().__init__(points, klass='graph', **attr)

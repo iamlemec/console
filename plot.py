@@ -63,3 +63,17 @@ def plot(data, margin=0.1, padding=0.05, ticks=False, canvas=True, render=True, 
         return doc.render()
     else:
         return doc
+
+class Sign(gram.Group):
+    def __init__(self, x, y, rx, ry, text, margin=0.2, base=0.35, shape=gram.Ellipse, **attr):
+        x0 = x - (1-margin)*rx
+        y0 = y + base*ry
+        w0 = 2*(1-margin)*rx
+        children = {
+            'box': shape(x, y, rx, ry),
+            'text': gram.Text(x0, y0, text)
+        }
+        super().__init__(children=children, klass='sign', **attr)
+
+def network(labels, positions=None, labeler=Sign):
+    pass
